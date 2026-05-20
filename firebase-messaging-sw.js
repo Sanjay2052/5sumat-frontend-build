@@ -31,10 +31,8 @@ messaging.onBackgroundMessage((payload) => {
     payload?.data?.message ||
     "";
 
-  const notificationId =
-    payload?.messageId ||
-    payload?.data?.id ||
-    `${Date.now()}-${Math.random()}`;
+  const baseId = payload?.messageId || payload?.data?.id || "fcm";
+  const notificationId = `${baseId}-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 
   self.registration.showNotification(title, {
     body,
