@@ -20,6 +20,7 @@ if (!firebase.apps.length) {
 const messaging = firebase.messaging();
 
 messaging.onBackgroundMessage((payload) => {
+  console.log('[SW] Background message received:', payload);
   const title =
     payload?.notification?.title ||
     payload?.data?.title ||
@@ -52,6 +53,11 @@ messaging.onBackgroundMessage((payload) => {
       });
     });
   });
+});
+
+// Additional push diagnostics
+self.addEventListener('push', (event) => {
+  console.log('[SW] push event:', event);
 });
 
 self.addEventListener("notificationclick", (event) => {
