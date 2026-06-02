@@ -11,6 +11,7 @@ const firebaseConfig = {
   storageBucket: params.get("storageBucket"),
   messagingSenderId: params.get("messagingSenderId"),
   appId: params.get("appId"),
+  measurementId: params.get("measurementId"),
 };
 
 if (!firebase.apps.length) {
@@ -18,6 +19,14 @@ if (!firebase.apps.length) {
 }
 
 const messaging = firebase.messaging();
+
+self.addEventListener("install", (event) => {
+  self.skipWaiting();
+});
+
+self.addEventListener("activate", (event) => {
+  event.waitUntil(self.clients.claim());
+});
 
 messaging.onBackgroundMessage((payload) => {
   console.log('[SW] Background message received:', payload);
@@ -32,20 +41,16 @@ messaging.onBackgroundMessage((payload) => {
     payload?.data?.message ||
     "";
 
-  const baseId = payload?.messageId || payload?.data?.id || "fcm";
-  const notificationId = `${baseId}-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
-
-  self.registration.showNotification(title, {
+  const notificationPromise = self.registration.showNotification(title, {
     body,
-    icon: "/favicon.ico",
-    tag: notificationId,
-    renotify: true,
+    icon: self.location.origin + "/SumatLogo.png",
+    badge: self.location.origin + "/SumatLogo.png",
     data: {
       url: payload?.data?.url || "/",
     },
   });
 
-  self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients) => {
+  const messagePromise = self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients) => {
     clients.forEach((client) => {
       client.postMessage({
         type: "FCM_BACKGROUND_MESSAGE",
@@ -53,11 +58,8 @@ messaging.onBackgroundMessage((payload) => {
       });
     });
   });
-});
 
-// Additional push diagnostics
-self.addEventListener('push', (event) => {
-  console.log('[SW] push event:', event);
+  return Promise.all([notificationPromise, messagePromise]);
 });
 
 self.addEventListener("notificationclick", (event) => {
