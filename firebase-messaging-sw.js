@@ -29,7 +29,6 @@ self.addEventListener("activate", (event) => {
 });
 
 messaging.onBackgroundMessage((payload) => {
-  console.log('[SW] Background message received:', payload);
   const title =
     payload?.notification?.title ||
     payload?.data?.title ||
