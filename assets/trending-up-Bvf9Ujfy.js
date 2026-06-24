@@ -1,1 +1,0 @@
-import{c as e}from"./createLucideIcon-usvUFSVN.js";const o=[["path",{d:"m15 18-6-6 6-6",key:"1wnfg3"}]],c=e("chevron-left",o);const n=[["path",{d:"M16 7h6v6",key:"box55l"}],["path",{d:"m22 7-8.5 8.5-5-5L2 17",key:"1t1m79"}]],d=e("trending-up",n);export{c as C,d as T};
