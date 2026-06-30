@@ -5,13 +5,13 @@ importScripts("https://www.gstatic.com/firebasejs/12.11.0/firebase-messaging-com
 const params = new URLSearchParams(self.location.search);
 
 const firebaseConfig = {
-  apiKey: params.get("apiKey"),
-  authDomain: params.get("authDomain"),
-  projectId: params.get("projectId"),
-  storageBucket: params.get("storageBucket"),
-  messagingSenderId: params.get("messagingSenderId"),
-  appId: params.get("appId"),
-  measurementId: params.get("measurementId"),
+  apiKey: params.get("apiKey") || "AIzaSyDJ8L8kou6sKaUb9x1uKCqlZ2OeBnFabvU",
+  authDomain: params.get("authDomain") || "sumat-61138.firebaseapp.com",
+  projectId: params.get("projectId") || "sumat-61138",
+  storageBucket: params.get("storageBucket") || "sumat-61138.firebasestorage.app",
+  messagingSenderId: params.get("messagingSenderId") || "419846942487",
+  appId: params.get("appId") || "1:419846942487:web:222fcd9ff2b3430eb99152",
+  measurementId: params.get("measurementId") || "G-SD01RMS83C",
 };
 
 if (!firebase.apps.length) {
@@ -40,12 +40,20 @@ messaging.onBackgroundMessage((payload) => {
     payload?.data?.message ||
     "";
 
+  const screen = payload?.data?.screen || "";
+  const orderId = payload?.data?.order_id || payload?.data?.orderId || "";
+  const orderNumber = payload?.data?.order_number || "";
+  const url = payload?.data?.url || "";
+
   const notificationPromise = self.registration.showNotification(title, {
     body,
     icon: self.location.origin + "/SumatLogo.png",
     badge: self.location.origin + "/SumatLogo.png",
     data: {
-      url: payload?.data?.url || "/",
+      url,
+      screen,
+      orderId,
+      orderNumber,
     },
   });
 
@@ -64,14 +72,50 @@ messaging.onBackgroundMessage((payload) => {
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
 
-  const url = event.notification?.data?.url || "/";
+  const data = event.notification?.data || {};
 
   event.waitUntil(
     self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients) => {
+      // 1. Determine role based on open tab URLs
+      let role = "customer";
+      let matchedClient = null;
+
       for (const client of clients) {
-        if (client.url.includes(url)) return client.focus();
+        if (client.url.includes("/vendor")) {
+          role = "vendor";
+          matchedClient = client;
+          break;
+        } else if (client.url.includes("/admin")) {
+          role = "admin";
+          matchedClient = client;
+          break;
+        } else {
+          matchedClient = client;
+        }
       }
-      return self.clients.openWindow(url);
+
+      // 2. Resolve URL path based on screen metadata
+      let targetUrl = data.url;
+      if (!targetUrl && data.screen === "order_detail" && data.orderId) {
+        if (role === "vendor") {
+          targetUrl = `/vendor/orders/${data.orderId}`;
+        } else if (role === "admin") {
+          targetUrl = `/admin/orders/${data.orderId}`;
+        } else {
+          targetUrl = `/order/${data.orderId}`;
+        }
+      }
+
+      if (!targetUrl) {
+        targetUrl = "/";
+      }
+
+      // 3. Focus matching client or navigate / open new
+      if (matchedClient) {
+        return matchedClient.navigate(targetUrl).then((c) => c?.focus());
+      } else {
+        return self.clients.openWindow(targetUrl);
+      }
     })
   );
 });
