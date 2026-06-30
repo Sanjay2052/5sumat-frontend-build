@@ -47,8 +47,6 @@ messaging.onBackgroundMessage((payload) => {
 
   const notificationPromise = self.registration.showNotification(title, {
     body,
-    icon: self.location.origin + "/SumatLogo.png",
-    badge: self.location.origin + "/SumatLogo.png",
     data: {
       url,
       screen,
