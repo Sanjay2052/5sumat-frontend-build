@@ -52,6 +52,7 @@ messaging.onBackgroundMessage((payload) => {
       screen,
       orderId,
       orderNumber,
+      ...payload?.data,
     },
   });
 
@@ -74,26 +75,33 @@ self.addEventListener("notificationclick", (event) => {
 
   event.waitUntil(
     self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients) => {
-      // 1. Determine role based on open tab URLs
-      let role = "customer";
-      let matchedClient = null;
+      // 1. Determine role based on notification data or open tab URLs
+      let role = "customer"; // default fallback
 
-      for (const client of clients) {
-        if (client.url.includes("/vendor")) {
-          role = "vendor";
-          matchedClient = client;
-          break;
-        } else if (client.url.includes("/admin")) {
-          role = "admin";
-          matchedClient = client;
-          break;
-        } else {
-          matchedClient = client;
+      const appType = data.app_type || data.appType || data.role || data.user_type || data.userType || "";
+      const lowerAppType = appType.toLowerCase();
+
+      if (lowerAppType.includes("admin")) {
+        role = "admin";
+      } else if (lowerAppType.includes("vendor")) {
+        role = "vendor";
+      } else if (lowerAppType.includes("customer")) {
+        role = "customer";
+      } else {
+        // Fallback: Determine role based on open tab URLs
+        for (const client of clients) {
+          if (client.url.includes("/vendor")) {
+            role = "vendor";
+            break;
+          } else if (client.url.includes("/admin")) {
+            role = "admin";
+            break;
+          }
         }
       }
 
-      // 2. Resolve URL path based on screen metadata
-      let targetUrl = data.url;
+      // 2. Resolve URL path based on screen metadata or default target
+      let targetUrl = data.url || "";
       if (!targetUrl && data.screen === "order_detail" && data.orderId) {
         if (role === "vendor") {
           targetUrl = `/vendor/orders/${data.orderId}`;
@@ -104,11 +112,44 @@ self.addEventListener("notificationclick", (event) => {
         }
       }
 
-      if (!targetUrl) {
-        targetUrl = "/";
+      // 3. Construct absolute URL depending on the role
+      let baseUrl = "https://5sumat.com";
+      if (role === "admin") {
+        baseUrl = "http://localhost:5173";
       }
 
-      // 3. Focus matching client or navigate / open new
+      if (!targetUrl) {
+        if (role === "vendor") {
+          targetUrl = `${baseUrl}/vendor/dashboard`;
+        } else if (role === "admin") {
+          targetUrl = `${baseUrl}/admin/dashboard`;
+        } else {
+          targetUrl = `${baseUrl}`;
+        }
+      } else {
+        // Resolve relative URLs using baseUrl
+        if (targetUrl.startsWith("/")) {
+          targetUrl = `${baseUrl}${targetUrl}`;
+        } else if (!targetUrl.startsWith("http://") && !targetUrl.startsWith("https://")) {
+          targetUrl = `${baseUrl}/${targetUrl}`;
+        }
+      }
+
+      // 4. Focus matching client of the same role or navigate / open new
+      let matchedClient = null;
+      for (const client of clients) {
+        if (role === "admin" && (client.url.includes("/admin") || client.url.includes("localhost:5173"))) {
+          matchedClient = client;
+          break;
+        } else if (role === "vendor" && client.url.includes("/vendor")) {
+          matchedClient = client;
+          break;
+        } else if (role === "customer" && !client.url.includes("/vendor") && !client.url.includes("/admin")) {
+          matchedClient = client;
+          break;
+        }
+      }
+
       if (matchedClient) {
         return matchedClient.navigate(targetUrl).then((c) => c?.focus());
       } else {
