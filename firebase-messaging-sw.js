@@ -114,9 +114,6 @@ self.addEventListener("notificationclick", (event) => {
 
       // 3. Construct absolute URL depending on the role
       let baseUrl = "https://5sumat.com";
-      if (role === "admin") {
-        baseUrl = "http://localhost:5173";
-      }
 
       if (!targetUrl) {
         if (role === "vendor") {
@@ -138,7 +135,7 @@ self.addEventListener("notificationclick", (event) => {
       // 4. Focus matching client of the same role or navigate / open new
       let matchedClient = null;
       for (const client of clients) {
-        if (role === "admin" && (client.url.includes("/admin") || client.url.includes("localhost:5173"))) {
+        if (role === "admin" && client.url.includes("/admin")) {
           matchedClient = client;
           break;
         } else if (role === "vendor" && client.url.includes("/vendor")) {
