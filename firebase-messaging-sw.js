@@ -102,13 +102,32 @@ self.addEventListener("notificationclick", (event) => {
 
       // 2. Resolve URL path based on screen metadata or default target
       let targetUrl = data.url || "";
-      if (!targetUrl && data.screen === "order_detail" && data.orderId) {
-        if (role === "vendor") {
-          targetUrl = `/vendor/orders/${data.orderId}`;
-        } else if (role === "admin") {
-          targetUrl = `/admin/orders/${data.orderId}`;
-        } else {
-          targetUrl = `/order/${data.orderId}`;
+      const returnId = data.return_request_id || data.return_id || data.returnId || "";
+      const orderId = data.vendor_order_id || data.order_id || data.orderId || "";
+      const screen = data.screen || "";
+
+      if (!targetUrl) {
+        if (
+          screen === "vendor_return_detail" ||
+          screen === "admin_return_detail" ||
+          screen === "return_detail" ||
+          data.type === "return_approved" ||
+          data.type === "return_rejected" ||
+          data.type === "return_requested"
+        ) {
+          if (role === "vendor") {
+            targetUrl = returnId ? `/vendor/returns/${returnId}` : `/vendor/returns`;
+          } else if (role === "admin") {
+            targetUrl = returnId ? `/admin/returns/${returnId}` : `/admin/returns`;
+          }
+        } else if ((screen === "order_detail" || screen === "vendor_order_detail" || screen === "admin_order_detail") && orderId) {
+          if (role === "vendor") {
+            targetUrl = `/vendor/orders/${orderId}`;
+          } else if (role === "admin") {
+            targetUrl = `/admin/orders/${orderId}`;
+          } else {
+            targetUrl = `/order/${orderId}`;
+          }
         }
       }
 
