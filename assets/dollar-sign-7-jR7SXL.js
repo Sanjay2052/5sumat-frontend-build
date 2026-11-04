@@ -1,0 +1,1 @@
+import{c as o}from"./createLucideIcon-BlDEgsJB.js";const a={name:"dollar-sign",size:24,node:[["path",{d:"M12 3v18",key:"108xh3"}],["path",{d:"M17 5H9.5a1 1 0 000 7h5a1 1 0 010 7H6",key:"pwzcbw"}]]};a.node;const n=o(a);export{n as D};
